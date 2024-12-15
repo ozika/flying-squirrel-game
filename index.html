@@ -1,0 +1,428 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <title>Making your first Phaser 3 Game - Part 4</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+    var config = {
+        type: Phaser.AUTO,
+        width: 1136,
+        height: 640,
+        physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: { y: 300 },
+                debug: false
+            }
+        },
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+
+    
+
+    var game = new Phaser.Game(config);
+    var platforms;
+    var player;
+    var sqeek;
+    var stars;
+    var cursors;
+    var score = 0;
+    var attDed = 0;
+    var bombs;
+    var scoreText;
+    var scoreText2;
+    // Variables for weights
+    let w1 = 1; // Weight for random movement
+    let w2 = 0; // Weight for following squeek
+
+
+    
+    function preload ()
+        {
+            //this.load.setBaseURL('https://labs.phaser.io');
+
+            //this.load.image('sky', 'phaser-tutorial/assets/skies/space3.png');
+            // this.load.image('logo', 'phaser-tutorial/assets/sprites/phaser3-logo.png');
+            //this.load.image('red', 'phaser-tutorial/assets/particles/red.png');
+            this.load.image('sky', 'phaser-tutorial/assets/sky.png');
+            this.load.image('forrest', 'assets/forrest.png');
+            this.load.image('grass', 'assets/grassground.png');
+            this.load.image('ground', 'phaser-tutorial/assets/platform.png');
+            this.load.image('star', 'phaser-tutorial/assets/star.png');
+            this.load.image('dragon', 'assets/dragon.png');
+            this.load.image('drink', 'assets/drink.png');
+            this.load.spritesheet('schnee', 'assets/schnee.png', { frameWidth: 36, frameHeight: 29 });
+            //this.load.image('sq', 'assets/sq3.png', { frameWidth: 64, frameHeight: 64 });
+            this.load.spritesheet('sqee', 'assets/sq_sheet2.png', { frameWidth: 16, frameHeight: 16 });
+            this.load.spritesheet('sqrun', 'assets/sqeek_run.png', { frameWidth: 48, frameHeight: 16 });
+            this.load.spritesheet('nuts', 'assets/nut_sheet.png', { frameWidth: 90, frameHeight: 90 });
+            this.load.spritesheet('dude', 
+                'phaser-tutorial/assets/dude.png',
+                { frameWidth: 32, frameHeight: 48 }
+            );
+        }
+        
+    function create ()
+        {   
+            this.physics.world.setBounds(0, 0, 1136, 640);
+            this.cameras.main.setBounds(0, 0, 1136, 640);
+
+            this.add.image(1136/2, 640/2, 'forrest');
+
+            platforms = this.physics.add.staticGroup();
+
+            for (let x = 24; x <= 1136; x += 46) {
+                platforms.create(x, 600, 'grass');
+            }
+
+            for (let x = 600; x <= 1136; x += 46) {
+                platforms.create(x, 470, 'grass');
+            }
+
+            for (let x = 40; x <= 400; x += 46) {
+                platforms.create(x, 350, 'grass');
+            }
+
+            for (let x = 800; x <= 1200; x += 46) {
+                platforms.create(x, 370, 'grass');
+            }
+
+            for (let x = 450; x <= 600; x += 46) {
+                platforms.create(x, 250, 'grass');
+            }
+
+            for (let x = 670; x <= 900; x += 46) {
+                platforms.create(x, 150, 'grass');
+            }
+
+            //platforms.create(550, 600, 'grass');
+            //platforms.create(600, 400, 'ground');
+            //platforms.create(200, 250, 'ground');
+            //platforms.create(850, 200, 'ground');
+
+            platforms.getChildren().forEach(function (child) {
+                child.setAlpha(0.8);
+            });
+
+            //player = this.physics.add.sprite(100, 450, 'dude');
+
+            //player.setBounce(0.2);
+            //player.setCollideWorldBounds(true);
+
+            sqeek = this.physics.add.sprite(450, 100, 'sqee');
+            sqeek.setScale(3);
+            sqeek.setVelocity(0, 0);
+            sqeek.setBounce(0.2);
+            sqeek.setCollideWorldBounds(true);
+            sqeek.body.setSize(16, 16).setOffset(0, 0); // Match physics body to sprite size
+            this.cameras.main.startFollow(sqeek);
+            
+
+            schnees = this.physics.add.group();
+            randomX = Phaser.Math.Between(100, 1036);
+            randomY = Phaser.Math.Between(50, 200);
+            schnee = schnees.create(randomX, randomY, 'schnee');
+            schnee.setCollideWorldBounds(true);
+            schnee.setVelocity(5, 5);
+            schnee.setScale(2);
+            schnee.setBounce(0.9);
+
+            this.anims.create({
+                key: 'left',
+                frames: this.anims.generateFrameNumbers('sqrun', { start: 10, end: 13 }),
+                frameRate: 10,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: 'left-sprint',
+                frames: this.anims.generateFrameNumbers('sqrun', { start: 25, end: 27 }),
+                frameRate: 10,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: 'right',
+                frames: this.anims.generateFrameNumbers('sqrun', { start: 15, end: 18 }),
+                frameRate: 10,
+                repeat: -1
+            });
+            this.anims.create({
+                key: 'right-sprint',
+                frames: this.anims.generateFrameNumbers('sqrun', { start: 20, end: 22 }),
+                frameRate: 10,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: 'idle',
+                frames: this.anims.generateFrameNumbers('sqee', { start: 120, end: 123 }),
+                frameRate: 10, // Slow frame rate for idle animation
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: 'chillin',
+                frames: this.anims.generateFrameNumbers('schnee', { start: 0, end: 5 }),
+                frameRate: 10, // Slow frame rate for idle animation
+                repeat: -1
+            });
+
+            cursors = this.input.keyboard.createCursorKeys();
+            ctrlKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.CTRL);
+
+            nuts = this.physics.add.group();
+            for (let i = 0; i < 10; i++) {
+                x = Phaser.Math.Between(100, 1036);  // Random x within scene boundaries
+                y = Phaser.Math.Between(100, 540); // Random y within scene boundaries
+                nuts.create(x, y, 'nuts'); // Replace 'nut' with the key for your nut sprite
+            }
+            //stars.setScale(0.5);
+
+            nuts.children.iterate(function (child) {
+                child.setScale(0.5);
+                child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+
+            });
+
+            scoreText = this.add.text(16, 16, 'Score: 0; Dragon Smell: 0%', { fontSize: '32px', fill: '#3498db' });
+            scoreText.setScrollFactor(0);
+            scoreText2 = this.add.text(16, 50, '', { fontSize: '48px',fill: '#e74c3c' });
+
+
+            dragons = this.physics.add.group();
+
+
+
+
+            this.physics.add.collider(sqeek, platforms);
+            this.physics.add.collider(schnee, platforms);
+            this.physics.add.collider(nuts, platforms);
+
+            this.physics.add.overlap(sqeek, nuts, collectNut, null, this);
+
+            this.physics.add.collider(dragons, platforms);
+
+            this.physics.add.collider(sqeek, dragons, hitBomb, null, this);
+            this.physics.add.collider(sqeek, schnee, hitSchnee, null, this);
+
+            this.physics.add.collider(dragons, schnees, hitSchneeGlynie, null, this);
+
+            
+
+    }
+    
+    function update ()
+    
+    {
+        
+        //schnee.anims.play('chillin', true);
+        
+        if (cursors.left.isDown && ctrlKey.isDown )
+        {
+            //scoreText2.setText('left pressed');
+            sqeek.setVelocityX(-320);
+
+            sqeek.anims.play('left-sprint', true);
+        }
+        else if (cursors.left.isDown && !ctrlKey.isDown )
+        {
+
+            //scoreText2.setText('left pressed');
+            sqeek.setVelocityX(-160);
+
+            sqeek.anims.play('left', true);
+        }
+
+        else if (cursors.right.isDown && ctrlKey.isDown )
+        {
+            sqeek.setVelocityX(320);
+
+            sqeek.anims.play('right-sprint', true);
+        }
+        else if (cursors.right.isDown && !ctrlKey.isDown )
+        {
+            sqeek.setVelocityX(160);
+
+            sqeek.anims.play('right', true);
+        }
+        else
+        {
+            sqeek.setVelocityX(0);
+                    // Play the idle animation only if it's not already playing
+            if (sqeek.anims.currentAnim && sqeek.anims.currentAnim.key !== 'idle') {
+                sqeek.anims.play('idle', true);
+            }
+            //sqeek.anims.play('idle');
+        }
+
+        if (cursors.up.isDown && sqeek.body.touching.down)
+        {
+            sqeek.setVelocityY(-330);
+        }
+
+
+            
+    }
+
+    function collectNut (sqeek, star)
+    {
+        star.disableBody(true, true);
+
+        //  Add and update the score
+        score += 10;
+        w2 =  (score- attDed)/(1000 ); // Weight for following squeek
+        if (w2>=1) {w=1}
+        w1 = 1 - w2;    // Ensure w1 + w2 = 1
+        scoreText.setText('Score: ' + score + ' Dragon smell: ' + Math.round(w2*100,2)+ '%');
+
+        if (nuts.countActive(true) === 0)
+        {
+            //  A new batch of nuts to collect
+            nuts.children.iterate(function (child) {
+                randomX = Phaser.Math.Between(100, 1036);
+                randomY = Phaser.Math.Between(50, 200);
+
+                child.enableBody(true, randomX, randomY, true, true);
+
+            });
+
+            var x = (sqeek.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
+
+            var dragon = dragons.create(x, 16, 'dragon');
+            direction = calculateDirection(dragon, sqeek);
+
+            dragon.setScale(0.1);
+            dragon.setBounce(1);
+            dragon.setCollideWorldBounds(true);
+            //dragon.setVelocity(Phaser.Math.Between(-200, 200), 20);
+            speed=200
+            //dragon.set
+            dragon.setVelocity(direction.x * speed, direction.y * speed);
+            dragon.allowGravity = false;
+
+            if (Math.random() > 0.6) {
+                randomX = Phaser.Math.Between(100, 1036);
+                randomY = Phaser.Math.Between(50, 200);
+                schnee = schnees.create(randomX, randomY, 'schnee');
+                schnee.setCollideWorldBounds(true);
+                schnee.setVelocity(5, 5);
+                schnee.setScale(2);
+                schnee.setBounce(0.9);
+                this.physics.add.collider(schnee, platforms);
+                this.physics.add.collider(sqeek, schnees, hitSchnee, null, this);
+            }
+            this.physics.add.collider(dragons, schnees, hitSchneeGlynie, null, this);
+
+            if (Math.random() > 0.8) {
+                // Generate the spray sprite at a random location
+                randomX = Phaser.Math.Between(100, 1036);
+                randomY = Phaser.Math.Between(50, 200);
+
+                // Create the spray sprite
+                spray = this.physics.add.sprite(randomX, randomY, 'drink'); // Replace 'spray' with your sprite key
+
+                // Optional: Add properties to the spray sprite
+                spray.setCollideWorldBounds(true); // Example: Ensure it stays within bounds
+                spray.setBounce(0.5);             // Example: Make it bouncy
+                spray.setScale(1.5);
+                this.physics.add.collider(sqeek, spray, hitSpray, null, this);
+                this.physics.add.collider(spray, platforms);
+            }
+
+        }
+    }
+
+    function hitBomb (sqeek, dragon)
+    {
+        this.physics.pause();
+
+        sqeek.setTint(0xff0000);
+
+        sqeek.anims.play('turn');
+
+        gameOver = true;
+        scoreText2.setStyle({
+            fontSize: '32px', // Adjust the size as needed
+            fontWeight: 'bold'
+            
+        });
+        scoreText2.setText('                Captured by Glynie!\n\n\n                GAME OVER');
+        //scoreText2.
+    }
+
+    function hitSchneeGlynie (dragon, schnee)
+    {
+        dragon.destroy();
+        //scoreText2.
+    }
+
+    function hitSpray (sqeek, spray)
+    {
+        attDed += 100
+        spray.destroy();
+        w2 =  (score- attDed)/(1000 ); // Weight for following squeek
+        if (w2>=1) {w=1}
+        w1 = 1 - w2;    // Ensure w1 + w2 = 1
+        scoreText.setText('Score: ' + score + ' Dragon smell: ' + Math.round(w2*100,2) + '%');
+        //scoreText2.
+    }
+
+    function hitSchnee  (sqeek, schnee)
+    {
+        schnee.setTint(0xff0000);
+        //schnee.setVelocity(15, 15);
+        schnee.setVelocity(Phaser.Math.Between(-400, 400), 200);
+        schnee.allowGravity = false;
+        schnee.setBounce(1.1);
+        //shText = this.add.text(500, 20, 'SCHEEP SPREEEEEEE', { fontSize: '32px', fill: '#3498db' });
+        //shText.setScrollFactor(0);
+        this.time.delayedCall(10000, () => {   
+            schnee.destroy();
+            //shText.setText("");
+        }, null, this);
+
+    }
+
+    function calculateDirection (dragon, squeek) {
+        // Random movement components
+        const randomX = Phaser.Math.FloatBetween(-1, 1);
+        const randomY = Phaser.Math.FloatBetween(-1, 1);
+
+        // Vector towards squeek
+        const squeekX = squeek.x - dragon.x;
+        const squeekY = squeek.y - dragon.y;
+
+        // Weighted combination of random and directed movement
+        const directionX = w1 * randomX + w2 * squeekX;
+        const directionY = w1 * randomY + w2 * squeekY;
+
+        // Normalize direction for consistent speed
+        const magnitude = Math.sqrt(directionX ** 2 + directionY ** 2);
+        return {
+            x: directionX / magnitude,
+            y: directionY / magnitude,
+        };
+
+      
+};
+
+
+</script>
+
+</body>
+</html>

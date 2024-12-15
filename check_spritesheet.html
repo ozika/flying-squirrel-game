@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Phaser Spritesheet Grid</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+    var config = {
+        type: Phaser.AUTO,
+        width: 800,
+        height: 600,
+        backgroundColor: '#4488aa',
+        scene: {
+            preload: preload,
+            create: create
+        }
+    };
+
+    var game = new Phaser.Game(config);
+
+    function preload() {
+        // Load the spritesheet
+        this.load.spritesheet('sq_sheet2', 'assets/sq_sheet2.png', { frameWidth: 16, frameHeight: 16 });
+    }
+
+    function create() {
+        // Add a white background
+        //this.add.rectangle(400, 300, 800, 600, 0xffffff).setOrigin(0.5, 0.5);
+
+        // Get the total number of frames in the spritesheet
+        const frameCount = this.textures.get('sq_sheet2').getFrameNames().length;
+
+        const cols = 10; // Number of columns for grid
+        const padding = 10; // Space between frames
+        const frameSize = 12; // Size of each frame (matches the spritesheet frame size)
+
+        let x = 50; // Starting x position
+        let y = 50; // Starting y position
+
+        for (let i = 0; i < frameCount; i++) {
+            // Add each frame to the scene
+            const frame = this.add.image(x, y, 'sq_sheet2', i).setOrigin(0, 0);
+
+            // Add frame number as text above each frame
+            this.add.text(x, y - 15, i, { fontSize: '6px', fill: '#000' }); // Black text for better contrast
+
+            // Update x and y for the grid
+            x += frameSize + padding;
+            if ((i + 1) % cols === 0) {
+                x = 50; // Reset x to the first column
+                y += frameSize + padding; // Move to the next row
+            }
+        }
+    }
+</script>
+
+</body>
+</html>
